@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>TGH ED Staffing Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --green:#006747; --green-d:#004d35; --green-l:#e5eeea; --gold:#cfc493; --gold-l:#f5f1e3;
+  --ink:#1d2a24; --muted:#5d6b64; --line:#d7dfdb; --bg:#f7f8f6; --card:#ffffff;
+  --red:#9e1b32; --red-l:#f7e4e8; --blue:#1f4e9e;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Source Sans 3",Arial,sans-serif;font-size:15px;line-height:1.4}
+header{background:var(--green);color:#fff;padding:12px 20px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+header h1{font-size:19px;margin:0;font-weight:700;letter-spacing:.2px}
+header .asof{font-size:13px;opacity:.85}
+nav{display:flex;gap:4px;flex-wrap:wrap;margin-left:auto}
+nav button{background:transparent;color:#fff;border:1px solid transparent;padding:6px 12px;border-radius:6px;font:inherit;font-weight:600;cursor:pointer}
+nav button.on{background:#fff;color:var(--green)}
+nav button:hover:not(.on){border-color:rgba(255,255,255,.5)}
+main{max-width:1400px;margin:0 auto;padding:18px 16px 60px}
+h2{font-size:20px;margin:6px 0 12px;color:var(--green-d)}
+h3{font-size:16px;margin:16px 0 8px;color:var(--green-d)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:16px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--green);border-radius:8px;padding:10px 12px}
+.kpi .v{font-size:24px;font-weight:700}
+.kpi .l{font-size:13px;color:var(--muted)}
+.kpi.warn{border-left-color:var(--red)}
+.kpi.gold{border-left-color:var(--gold)}
+label{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:3px}
+input,select,textarea{font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink)}
+input[type=number]{width:90px}
+input.cell{width:58px;padding:4px 5px;text-align:right}
+button.btn{background:var(--green);color:#fff;border:0;border-radius:6px;padding:7px 14px;font:inherit;font-weight:600;cursor:pointer}
+button.btn.sec{background:#fff;color:var(--green);border:1px solid var(--green)}
+button.btn.danger{background:#fff;color:var(--red);border:1px solid var(--red)}
+button.btn.small{padding:3px 9px;font-size:13px}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;white-space:nowrap}
+th{background:var(--green-l);color:var(--green-d);font-weight:700;position:sticky;top:0;cursor:pointer;user-select:none}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr.clk:hover td{background:var(--gold-l);cursor:pointer}
+tr.tot td{font-weight:700;background:var(--green-l)}
+.neg{color:var(--red);font-weight:600}
+.pos{color:var(--green);font-weight:600}
+.tag{display:inline-block;font-size:12px;padding:1px 7px;border-radius:10px;background:var(--green-l);color:var(--green-d);font-weight:600}
+.tag.prn{background:var(--gold-l);color:#6b5d1e}
+.tag.north{background:#e7edf7;color:var(--blue)}
+.tag.peds{background:#f1e8f5;color:#6a2d7f}
+.muted{color:var(--muted);font-size:13px}
+.note{font-size:13px;color:var(--muted);margin:6px 0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:900px){.grid2{grid-template-columns:1fr}}
+.drawer{position:fixed;top:0;right:0;width:min(560px,100%);height:100%;background:#fff;border-left:1px solid var(--line);box-shadow:-6px 0 20px rgba(0,0,0,.12);padding:18px;overflow-y:auto;transform:translateX(105%);transition:transform .2s;z-index:20}
+.drawer.open{transform:none}
+.drawer .close{float:right}
+.formgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.formgrid label.full{grid-column:1/-1}
+.bar{height:14px;background:var(--green);border-radius:3px}
+.bar.d{background:var(--gold)}
+.bar.r{background:var(--red)}
+svg text{font-family:"Source Sans 3",Arial,sans-serif}
+#gate{position:fixed;inset:0;background:var(--green);display:flex;align-items:center;justify-content:center;z-index:50}
+#gate .box{background:#fff;padding:26px 28px;border-radius:12px;width:min(380px,92%)}
+#gate h1{color:var(--green);font-size:20px;margin:0 0 6px}
+#gate input{width:100%;margin:12px 0}
+.hide{display:none!important}
+.legend span{display:inline-flex;align-items:center;gap:5px;margin-right:14px;font-size:13px}
+.legend i{width:12px;height:12px;border-radius:2px;display:inline-block}
+.dirty{background:var(--gold-l);border:1px solid var(--gold);padding:8px 12px;border-radius:8px;margin-bottom:12px;font-size:14px}
+</style>
+</head>
+<body>
+<div id="gate">
+  <div class="box">
+    <h1>TGH ED Staffing Planner</h1>
+    <div class="muted">USF Emergency Medicine and TGH Emergency Services. Enter the password to open.</div>
+    <input id="pw" type="password" placeholder="Password" autocomplete="current-password">
+    <button class="btn" id="go">Open</button>
+    <div id="pwmsg" class="neg" style="margin-top:8px"></div>
+  </div>
+</div>
+
+<header class="hide" id="hdr">
+  <h1>TGH ED Staffing Planner</h1>
+  <span class="asof" id="asof"></span>
+  <nav id="nav">
+    <button data-v="overview" class="on">Overview</button>
+    <button data-v="people">Physicians</button>
+    <button data-v="site">Site report</button>
+    <button data-v="shifts">Shifts</button>
+    <button data-v="plan">Planning</button>
+    <button data-v="data">Data</button>
+  </nav>
+</header>
+<main id="app" class="hide"></main>
+<div class="drawer" id="drawer"></div>
+
+<script>
+"use strict";
+// ---------- state ----------
+let BASE=null, D=null, KEY=null;
+const LS='tghed_staffing_v1';
+const SOUTH=['TGH Main','Kennedy','BHP','Peds'];
+const NORTH=['Brooksville','Crystal River','Crystal River FSED','Spring Hill'];
+const ALL=[...SOUTH,...NORTH];
+const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const FY=['2026-07','2026-08','2026-09','2026-10','2026-11','2026-12','2027-01','2027-02','2027-03','2027-04','2027-05','2027-06'];
+const ui={view:'overview',basis:'contract_prn',site:'TGH Main',q:'',cat:'All',siteFilter:'All',sort:'name',dir:1,shiftSite:'TGH Main',planSites:'South'};
+
+// ---------- crypto ----------
+const enc=new TextEncoder(), dec=new TextDecoder();
+const b64=u=>btoa(String.fromCharCode(...new Uint8Array(u)));
+const unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+async function deriveKey(pw,salt){
+  const k=await crypto.subtle.importKey('raw',enc.encode(pw),'PBKDF2',false,['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:200000,hash:'SHA-256'},k,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+}
+async function decryptBlob(blob,pw){
+  const salt=unb64(blob.salt), iv=unb64(blob.iv);
+  const key=await deriveKey(pw,salt);
+  const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,unb64(blob.data));
+  return {obj:JSON.parse(dec.decode(pt)),key,salt};
+}
+async function encryptObj(obj,key,salt){
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,enc.encode(JSON.stringify(obj)));
+  return {v:1,salt:b64(salt),iv:b64(iv),data:b64(ct)};
+}
+
+// ---------- persistence ----------
+async function saveLocal(){
+  try{ const blob=await encryptObj(D,KEY.key,KEY.salt); localStorage.setItem(LS,JSON.stringify(blob)); }catch(e){}
+}
+async function loadLocal(pw){
+  try{ const s=localStorage.getItem(LS); if(!s) return null; const r=await decryptBlob(JSON.parse(s),pw); return r.obj; }catch(e){ return null; }
+}
+function isDirty(){ return JSON.stringify(D)!==JSON.stringify(BASE); }
+
+// ---------- math ----------
+const r1=x=>Math.round(x*10)/10;
+const fmt=x=>(x==null||isNaN(x))?'':(Math.abs(x)<0.05?'-':r1(x).toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1}));
+const fmt0=x=>(x==null||isNaN(x))?'':Math.round(x).toLocaleString();
+const sum=a=>a.reduce((s,x)=>s+(+x||0),0);
+const FTEMO=()=>D.meta.fteHours/12;
+function siteWeekly(site){ const s=D.sites.find(x=>x.name===site); return s?sum(s.shifts.map(l=>sum(l.hours))):0; }
+function siteDemandMo(site){ return siteWeekly(site)*52/12; }
+function staffedAvg(site){ const s=D.sites.find(x=>x.name===site); return s?sum(s.staffedMonthly.slice(2,5))/3:0; }
+function actualAvg(p,site){ const m=p.monthly[site]; return m?sum(m.slice(2,5))/3:0; }
+function actualAll(p){ return sum(ALL.map(s=>actualAvg(p,s))); }
+function sixAvg(p){ return sum(ALL.map(s=>{const m=p.monthly[s];return m?sum(m)/6:0;})); }
+function isPRN(p){ return p.category==='PRN'; }
+function contractMo(p){ return (+p.annualContract||0)/12; }
+function targetMo(p){ return p.targetMonthly!=null&&p.targetMonthly!==''?+p.targetMonthly:contractMo(p); }
+function allocShare(p,site){ const a=p.allocPct||{}; const t=sum(Object.values(a)); return t?(+a[site]||0)/t:0; }
+function hasContract(p){ return (+p.annualContract||0)>0; }
+function activeIn(p,ym){ if(p.start&&ym<p.start.slice(0,7)) return false; if(p.end&&ym>p.end.slice(0,7)) return false; return true; }
+// supply for one physician at a site per month under a basis
+function supply(p,site,basis){
+  if(basis==='actual') return actualAvg(p,site);
+  const contracted = hasContract(p);
+  if(basis==='contract') return contracted? contractMo(p)*allocShare(p,site) : 0;
+  if(basis==='target') return contracted||p.targetMonthly? targetMo(p)*(hasContract(p)?allocShare(p,site):prnShare(p,site)) : 0;
+  // contract_prn and target_prn: contracts plus PRN and unreviewed at recent actual
+  if(contracted) return (basis==='target_prn'?targetMo(p):contractMo(p))*allocShare(p,site);
+  return actualAvg(p,site);
+}
+function prnShare(p,site){ const t=actualAll(p); return t?actualAvg(p,site)/t:(site==='TGH Main'?1:0); }
+const BASES={contract:'Contracted hours only',target:'Targeted monthly hours only',contract_prn:'Contracted plus PRN at recent average',target_prn:'Targeted plus PRN at recent average',actual:'Actual scheduled (Jul-Sep average)'};
+
+// ---------- helpers ----------
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function catTag(p){ const c=p.category; const cls=c==='PRN'?'prn':(c.startsWith('North')?'north':(c.startsWith('Peds')?'peds':'')); return `<span class="tag ${cls}">${esc(c)}</span>`; }
+function basisSelect(id){ return `<label>Supply basis<select id="${id}">${Object.entries(BASES).map(([k,v])=>`<option value="${k}" ${ui.basis===k?'selected':''}>${v}</option>`).join('')}</select></label>`; }
+function siteSelect(id,val,withAll){ return `<label>Site<select id="${id}">${withAll?`<option ${val==='All'?'selected':''}>All</option>`:''}${ALL.map(s=>`<option ${val===s?'selected':''}>${s}</option>`).join('')}</select></label>`; }
+function cls(x){ return x<-0.05?'neg':(x>0.05?'pos':''); }
+function dirtyBanner(){ return isDirty()?`<div class="dirty">You have unsaved edits stored only in this browser. To share them, go to <b>Data</b> and download the updated data file.</div>`:''; }
+function render(){ const f=VIEWS[ui.view]; $('#app').innerHTML=dirtyBanner()+f(); (BIND[ui.view]||(()=>{}))(); }
+document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#nav button').forEach(x=>x.classList.remove('on'));b.classList.add('on');ui.view=b.dataset.v;render();});
+async function commit(){ await saveLocal(); render(); }
+
+// ---------- site summary ----------
+function siteRows(basis){
+  return ALL.map(s=>{
+    const dem=siteDemandMo(s), sup=sum(D.physicians.map(p=>supply(p,s,basis))), stf=staffedAvg(s);
+    return {site:s,group:SOUTH.includes(s)?'South':'North',weekly:siteWeekly(s),dem,sup,stf,gap:sup-dem,fte:(sup-dem)/FTEMO()};
+  });
+}
+function siteTable(rows){
+  const tot=g=>{const rs=rows.filter(r=>!g||r.group===g);return {site:g?`${g} total`:'System total',weekly:sum(rs.map(r=>r.weekly)),dem:sum(rs.map(r=>r.dem)),sup:sum(rs.map(r=>r.sup)),stf:sum(rs.map(r=>r.stf))};};
+  const line=(r,t)=>{const gap=r.sup-r.dem;return `<tr class="${t?'tot':'clk'}" ${t?'':`data-site="${esc(r.site)}"`}><td>${esc(r.site)}</td><td class="n">${fmt0(r.weekly)}</td><td class="n">${fmt(r.dem)}</td><td class="n">${fmt(r.stf)}</td><td class="n">${fmt(r.sup)}</td><td class="n ${cls(gap)}">${fmt(gap)}</td><td class="n ${cls(gap)}">${fmt(gap/FTEMO())}</td></tr>`;};
+  return `<div class="tablewrap"><table><thead><tr><th>Site</th><th class="n">Demand hr/wk</th><th class="n">Demand hr/mo</th><th class="n">Staffed hr/mo (Jul-Sep)</th><th class="n">Supply hr/mo</th><th class="n">Supply minus demand</th><th class="n">FTE equivalent</th></tr></thead><tbody>
+  ${rows.filter(r=>r.group==='South').map(r=>line(r)).join('')}${line(tot('South'),1)}
+  ${rows.filter(r=>r.group==='North').map(r=>line(r)).join('')}${line(tot('North'),1)}${line(tot(),1)}</tbody></table></div>
+  <div class="note">Demand comes from the shift grids on the Shifts page (weekly hours x 52 / 12). FTE equivalent uses ${fmt0(D.meta.fteHours)} clinical hours per FTE. Click a site for its report.</div>`;
+}
+
+// ---------- views ----------
+const VIEWS={}, BIND={};
+VIEWS.overview=()=>{
+  const rows=siteRows(ui.basis);
+  const south=rows.filter(r=>r.group==='South'), north=rows.filter(r=>r.group==='North');
+  const fte=D.physicians.filter(p=>p.category==='FTE');
+  const prn=D.physicians.filter(isPRN);
+  const sCon=sum(D.physicians.map(p=>sum(SOUTH.map(s=>supply(p,s,'contract')))));
+  const sStf=sum(south.map(r=>r.stf)), sDem=sum(south.map(r=>r.dem));
+  const prnHrs=sum(prn.map(p=>sum(SOUTH.map(s=>actualAvg(p,s)))));
+  const ending=D.physicians.filter(p=>p.end).sort((a,b)=>a.end.localeCompare(b.end));
+  const starting=D.physicians.filter(p=>p.start&&p.start>=D.meta.asOf).sort((a,b)=>a.start.localeCompare(b.start));
+  const maxv=Math.max(...rows.map(r=>Math.max(r.dem,r.sup,r.stf)));
+  return `<h2>System overview</h2>
+  <div class="row" style="margin-bottom:12px">${basisSelect('basis')}</div>
+  <div class="kpis">
+    <div class="kpi"><div class="v">${fmt0(sDem)}</div><div class="l">South demand hr/mo (Main, Kennedy, BHP, Peds)</div></div>
+    <div class="kpi"><div class="v">${fmt0(sStf)}</div><div class="l">South staffed hr/mo, Jul-Sep average</div></div>
+    <div class="kpi gold"><div class="v">${fmt0(sCon)}</div><div class="l">South contracted hr/mo (FTE contracts)</div></div>
+    <div class="kpi warn"><div class="v">${fmt0(sStf-sCon)}</div><div class="l">South hours carried by PRN and unreviewed staff</div></div>
+    <div class="kpi"><div class="v">${fte.length}</div><div class="l">Contracted USF physicians and fellows</div></div>
+    <div class="kpi gold"><div class="v">${prn.length}</div><div class="l">PRN physicians (${fmt0(prnHrs)} hr/mo in the south)</div></div>
+  </div>
+  <div class="card"><h3>Supply vs demand by site (${esc(BASES[ui.basis])})</h3>${siteTable(rows)}</div>
+  <div class="card"><h3>Demand, staffed and supply by site, hr/mo</h3>
+    <div class="legend"><span><i style="background:var(--gold)"></i>Demand</span><span><i style="background:#8fb8a6"></i>Staffed (Jul-Sep)</span><span><i style="background:var(--green)"></i>Supply on selected basis</span></div>
+    ${barChart(rows.map(r=>({label:r.site,vals:[r.dem,r.stf,r.sup]})),maxv)}
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>Scheduled departures and end dates</h3>${ending.length?`<table><tr><th>Name</th><th>End</th><th class="n">Contract hr/mo</th></tr>${ending.map(p=>`<tr class="clk" data-id="${p.id}"><td>${esc(p.name)}</td><td>${esc(p.end)}</td><td class="n">${fmt(contractMo(p))}</td></tr>`).join('')}</table>`:'<div class="muted">No end dates entered. Add one on a physician record to see it in the projection.</div>'}
+    <div class="note">Already removed from the roster: ${esc(D.meta.departed)}.</div></div>
+    <div class="card"><h3>Future starts</h3>${starting.length?`<table><tr><th>Name</th><th>Start</th><th class="n">Contract hr/mo</th></tr>${starting.map(p=>`<tr class="clk" data-id="${p.id}"><td>${esc(p.name)}</td><td>${esc(p.start)}</td><td class="n">${fmt(contractMo(p))}</td></tr>`).join('')}</table>`:'<div class="muted">No future start dates entered. Use Physicians, then Add physician, to plan a hire.</div>'}</div>
+  </div>`;
+};
+function barChart(items,maxv){
+  const W=900,rowH=46,lab=150,H=items.length*rowH+20, sc=v=>(W-lab-70)*v/(maxv||1);
+  const cols=['#cfc493','#8fb8a6','#006747'];
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Demand, staffed and supply by site">${items.map((it,i)=>{const y=10+i*rowH;return `<text x="0" y="${y+22}" font-size="14" fill="#1d2a24">${esc(it.label)}</text>${it.vals.map((v,j)=>`<rect x="${lab}" y="${y+j*12}" width="${Math.max(0,sc(v))}" height="10" fill="${cols[j]}" rx="2"></rect><text x="${lab+sc(v)+5}" y="${y+j*12+9}" font-size="11" fill="#5d6b64">${fmt0(v)}</text>`).join('')}`;}).join('')}</svg>`;
+}
+BIND.overview=()=>{ $('#basis').onchange=e=>{ui.basis=e.target.value;render();}; bindSiteClicks(); bindPersonClicks(); };
+function bindSiteClicks(){ document.querySelectorAll('tr[data-site]').forEach(t=>t.onclick=()=>{ui.site=t.dataset.site;ui.view='site';setNav();render();}); }
+function bindPersonClicks(){ document.querySelectorAll('tr[data-id]').forEach(t=>t.onclick=()=>openPerson(t.dataset.id)); }
+function setNav(){ document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('on',x.dataset.v===ui.view)); }
+
+// physicians
+VIEWS.people=()=>{
+  const q=ui.q.toLowerCase();
+  let ps=D.physicians.filter(p=>(!q||p.name.toLowerCase().includes(q)||p.notes.toLowerCase().includes(q)||p.role.toLowerCase().includes(q))&&(ui.cat==='All'||p.category===ui.cat)&&(ui.siteFilter==='All'||actualAvg(p,ui.siteFilter)>0||allocShare(p,ui.siteFilter)>0));
+  const key={name:p=>p.name,cat:p=>p.category,ann:p=>+p.annualContract||0,tgt:p=>targetMo(p),act:p=>actualAll(p),six:p=>sixAvg(p)};
+  ps.sort((a,b)=>{const ka=key[ui.sort](a),kb=key[ui.sort](b);return (ka>kb?1:ka<kb?-1:0)*ui.dir;});
+  const cats=['All',...new Set(D.physicians.map(p=>p.category))];
+  const th=(k,l,n)=>`<th class="${n?'n':''}" data-sort="${k}">${l}${ui.sort===k?(ui.dir>0?' ▲':' ▼'):''}</th>`;
+  return `<h2>Physicians</h2>
+  <div class="card"><div class="row">
+    <label>Search<input id="q" value="${esc(ui.q)}" placeholder="Name, role or note" style="width:240px"></label>
+    <label>Category<select id="cat">${cats.map(c=>`<option ${ui.cat===c?'selected':''}>${esc(c)}</option>`).join('')}</select></label>
+    ${siteSelect('sf',ui.siteFilter,true)}
+    <button class="btn" id="add">Add physician</button>
+    <span class="muted">${ps.length} shown. Click a row to see or edit details.</span>
+  </div></div>
+  <div class="card tablewrap"><table><thead><tr>${th('name','Name')}${th('cat','Category')}<th>Role</th>${th('ann','Annual contract',1)}${th('tgt','Target hr/mo',1)}<th class="n">North contract (annual)</th>${th('act','Worked hr/mo, last 3 mo',1)}${ALL.map(s=>`<th class="n">${s}</th>`).join('')}${th('six','Worked hr/mo, last 6 mo',1)}<th>Dates</th></tr></thead><tbody>
+  ${ps.map(p=>`<tr class="clk" data-id="${p.id}"><td>${esc(p.name)}</td><td>${catTag(p)}</td><td>${esc(p.role)}</td><td class="n">${fmt0(p.annualContract)}</td><td class="n">${p.targetMonthly!=null&&p.targetMonthly!==''?`<b style="color:var(--blue)">${fmt(targetMo(p))}</b>`:fmt(targetMo(p))}</td><td class="n">${fmt0(p.northAnnual)}</td><td class="n">${fmt(actualAll(p))}</td>${ALL.map(s=>`<td class="n">${fmt(actualAvg(p,s))}</td>`).join('')}<td class="n">${fmt(sixAvg(p))}</td><td>${esc([p.start&&('from '+p.start),p.end&&('to '+p.end)].filter(Boolean).join(' '))}</td></tr>`).join('')}
+  <tr class="tot"><td>Total</td><td></td><td></td><td class="n">${fmt0(sum(ps.map(p=>+p.annualContract||0)))}</td><td class="n">${fmt(sum(ps.map(targetMo)))}</td><td class="n">${fmt0(sum(ps.map(p=>+p.northAnnual||0)))}</td><td class="n">${fmt(sum(ps.map(actualAll)))}</td>${ALL.map(s=>`<td class="n">${fmt(sum(ps.map(p=>actualAvg(p,s))))}</td>`).join('')}<td class="n">${fmt(sum(ps.map(sixAvg)))}</td><td></td></tr>
+  </tbody></table></div>
+  <div class="note">Blue targets are monthly targets set by leadership. Other targets equal the contract divided by 12. Worked hours are ShiftAdmin scheduled hours, July-September 2026 average.</div>`;
+};
+BIND.people=()=>{
+  $('#q').oninput=e=>{ui.q=e.target.value;const pos=e.target.selectionStart;render();const el=$('#q');el.focus();el.setSelectionRange(pos,pos);};
+  $('#cat').onchange=e=>{ui.cat=e.target.value;render();};
+  $('#sf').onchange=e=>{ui.siteFilter=e.target.value;render();};
+  $('#add').onclick=()=>openPerson(null);
+  document.querySelectorAll('th[data-sort]').forEach(t=>t.onclick=()=>{const k=t.dataset.sort;if(ui.sort===k)ui.dir*=-1;else{ui.sort=k;ui.dir=1;}render();});
+  bindPersonClicks();
+};
+
+// person drawer
+function openPerson(id){
+  const isNew=!id;
+  const p=isNew?{id:'n'+Date.now(),name:'',category:'FTE',role:'Faculty',annualContract:0,targetMonthly:null,northAnnual:0,allocPct:{'TGH Main':100},start:'',end:'',notes:'',monthly:{}}:D.physicians.find(x=>x.id===id);
+  const trend=ALL.filter(s=>p.monthly[s]).map(s=>`<tr><td>${s}</td>${p.monthly[s].map(v=>`<td class="n">${fmt(v)}</td>`).join('')}</tr>`).join('');
+  const tot=D.meta.months.map((m,i)=>sum(ALL.map(s=>p.monthly[s]?p.monthly[s][i]:0)));
+  $('#drawer').innerHTML=`<button class="btn sec small close" id="dx">Close</button>
+  <h2>${isNew?'Add physician':esc(p.name)}</h2>
+  ${isNew?'':`<div>${catTag(p)} <span class="muted">${esc(p.role)}</span></div>`}
+  <h3>Record</h3>
+  <div class="formgrid">
+    <label class="full">Name (Last, First)<input id="f_name" value="${esc(p.name)}"></label>
+    <label>Category<select id="f_cat">${['FTE','PRN','North (schedule estimate)','Peds (contract not reviewed)'].map(c=>`<option ${p.category===c?'selected':''}>${c}</option>`).join('')}</select></label>
+    <label>Role<input id="f_role" value="${esc(p.role)}"></label>
+    <label>Annual contracted hours<input id="f_ann" type="number" value="${+p.annualContract||0}"></label>
+    <label>Targeted monthly hours (blank = contract / 12)<input id="f_tgt" type="number" value="${p.targetMonthly??''}"></label>
+    <label>North contracted hours (annual)<input id="f_north" type="number" value="${+p.northAnnual||0}"></label>
+    <label>Start date (blank = active)<input id="f_start" type="month" value="${esc((p.start||'').slice(0,7))}"></label>
+    <label>End date (blank = no end)<input id="f_end" type="month" value="${esc((p.end||'').slice(0,7))}"></label>
+    <label class="full">Notes<textarea id="f_notes" rows="3">${esc(p.notes)}</textarea></label>
+  </div>
+  <h3>Where contracted hours are worked (%)</h3>
+  <div class="note">Used to place contracted or targeted hours at each site. Defaults come from where the physician actually worked July-September.</div>
+  <div class="formgrid">${ALL.map(s=>`<label>${s}<input type="number" class="f_alloc" data-s="${s}" value="${r1(+(p.allocPct||{})[s]||0)}"></label>`).join('')}</div>
+  <div class="row" style="margin-top:14px"><button class="btn" id="fsave">${isNew?'Add physician':'Save changes'}</button>${isNew?'':`<button class="btn danger" id="fdel">Remove from roster</button>`}</div>
+  ${isNew?'':`<h3>Scheduled hours by month (ShiftAdmin)</h3><div class="tablewrap"><table><tr><th>Site</th>${D.meta.months.map(m=>`<th class="n">${m.slice(5)}/${m.slice(2,4)}</th>`).join('')}</tr>${trend||`<tr><td colspan="7" class="muted">No shifts May-October 2026</td></tr>`}${trend?`<tr class="tot"><td>Total</td>${tot.map(v=>`<td class="n">${fmt(v)}</td>`).join('')}</tr>`:''}</table></div>
+  <div class="kpis" style="margin-top:12px"><div class="kpi"><div class="v">${fmt(actualAll(p))}</div><div class="l">Worked hr/mo, Jul-Sep</div></div><div class="kpi gold"><div class="v">${fmt(targetMo(p))}</div><div class="l">Target hr/mo</div></div><div class="kpi ${actualAll(p)-targetMo(p)<0?'warn':''}"><div class="v">${fmt(actualAll(p)-targetMo(p))}</div><div class="l">Worked minus target</div></div></div>
+  ${shiftMixHtml(p)}`}`;
+  $('#drawer').classList.add('open');
+  $('#dx').onclick=()=>$('#drawer').classList.remove('open');
+  $('#fsave').onclick=async()=>{
+    const v=id=>$(id).value;
+    const n=v('#f_name').trim(); if(!n){alert('Enter a name.');return;}
+    Object.assign(p,{name:n,category:v('#f_cat'),role:v('#f_role'),annualContract:+v('#f_ann')||0,targetMonthly:v('#f_tgt')===''?null:+v('#f_tgt'),northAnnual:+v('#f_north')||0,start:v('#f_start'),end:v('#f_end'),notes:v('#f_notes')});
+    const a={}; document.querySelectorAll('.f_alloc').forEach(i=>{if(+i.value)a[i.dataset.s]=+i.value;}); p.allocPct=a;
+    if(isNew) D.physicians.push(p);
+    $('#drawer').classList.remove('open'); await commit();
+  };
+  if(!isNew) $('#fdel').onclick=async()=>{ if(!confirmRemove(p)) return; D.physicians=D.physicians.filter(x=>x.id!==p.id); $('#drawer').classList.remove('open'); await commit(); };
+}
+function confirmRemove(p){ return window.confirm('Remove '+p.name+' from the roster? For a planned departure, entering an end date keeps them in the projection until they leave.'); }
+function shiftMixHtml(p){
+  if(!p.shiftMix||!Object.keys(p.shiftMix).length) return `<h3>Shift types worked</h3><div class="muted">Shift-type detail by physician has not been loaded yet.</div>`;
+  const rows=Object.entries(p.shiftMix).sort((a,b)=>b[1].h-a[1].h);
+  return `<h3>Shift types worked, Jul-Sep</h3><table><tr><th>Site</th><th>Shift</th><th class="n">Shifts</th><th class="n">Hours</th></tr>${rows.map(([k,v])=>{const [s,sh]=k.split('|');return `<tr><td>${esc(s)}</td><td>${esc(sh)}</td><td class="n">${v.c}</td><td class="n">${fmt(v.h)}</td></tr>`;}).join('')}</table>`;
+}
+
+// site report
+VIEWS.site=()=>{
+  const s=ui.site, dem=siteDemandMo(s), stf=staffedAvg(s);
+  const ps=D.physicians.map(p=>({p,con:supply(p,s,'contract'),tgt:supply(p,s,'target_prn'),act:actualAvg(p,s)})).filter(x=>x.con>0.05||x.act>0.05||x.tgt>0.05).sort((a,b)=>b.act-a.act);
+  const con=sum(ps.map(x=>x.con)), tgt=sum(ps.map(x=>x.tgt)), act=sum(ps.map(x=>x.act));
+  const prnAct=sum(ps.filter(x=>!hasContract(x.p)).map(x=>x.act));
+  const site=D.sites.find(x=>x.name===s);
+  return `<h2>Site report: ${esc(s)}</h2>
+  <div class="card"><div class="row">${siteSelect('sitesel',s)}<button class="btn sec" id="csv">Download this report (CSV)</button></div></div>
+  <div class="kpis">
+    <div class="kpi gold"><div class="v">${fmt0(dem)}</div><div class="l">Demand hr/mo (${fmt0(siteWeekly(s))} hr/wk)</div></div>
+    <div class="kpi"><div class="v">${fmt0(stf)}</div><div class="l">Staffed hr/mo, Jul-Sep</div></div>
+    <div class="kpi"><div class="v">${fmt0(con)}</div><div class="l">Contracted hr/mo placed here</div></div>
+    <div class="kpi ${con-dem<0?'warn':''}"><div class="v">${fmt0(con-dem)}</div><div class="l">Contracted minus demand (${fmt(( con-dem)/FTEMO())} FTE)</div></div>
+    <div class="kpi"><div class="v">${fmt0(tgt)}</div><div class="l">Targeted plus PRN at recent average</div></div>
+    <div class="kpi gold"><div class="v">${fmt0(prnAct)}</div><div class="l">Worked here by PRN and unreviewed staff</div></div>
+  </div>
+  <div class="card"><h3>Physicians working or contracted at ${esc(s)}</h3><div class="tablewrap"><table id="srep"><thead><tr><th>Name</th><th>Category</th><th class="n">Share of contract here</th><th class="n">Contracted hr/mo here</th><th class="n">Targeted hr/mo here</th><th class="n">Worked hr/mo here (Jul-Sep)</th><th class="n">Worked minus contracted</th></tr></thead><tbody>
+  ${ps.map(x=>`<tr class="clk" data-id="${x.p.id}"><td>${esc(x.p.name)}</td><td>${catTag(x.p)}</td><td class="n">${hasContract(x.p)?fmt(allocShare(x.p,s)*100)+'%':''}</td><td class="n">${fmt(x.con)}</td><td class="n">${fmt(x.tgt)}</td><td class="n">${fmt(x.act)}</td><td class="n ${cls(x.act-x.con)}">${fmt(x.act-x.con)}</td></tr>`).join('')}
+  <tr class="tot"><td>Total</td><td></td><td></td><td class="n">${fmt(con)}</td><td class="n">${fmt(tgt)}</td><td class="n">${fmt(act)}</td><td class="n">${fmt(act-con)}</td></tr></tbody></table></div>
+  <div class="note">Worked hours sum to ${fmt(act)} vs facility staffed ${fmt(stf)}. Any difference is shifts worked by people not on this roster (departed staff who still held summer shifts).</div></div>
+  <div class="card"><h3>Shift lines at ${esc(s)}</h3>${shiftTable(site,false)}<div class="note">Edit these on the Shifts page.</div></div>`;
+};
+BIND.site=()=>{ $('#sitesel').onchange=e=>{ui.site=e.target.value;render();}; bindPersonClicks();
+  $('#csv').onclick=()=>{ const rows=[...document.querySelectorAll('#srep tr')].map(tr=>[...tr.children].map(td=>'"'+td.textContent.replace(/"/g,'""')+'"').join(',')); download(`site-report-${ui.site.replace(/\s+/g,'-')}.csv`,rows.join('\n'),'text/csv'); };
+};
+
+// shifts
+function shiftTable(site,edit){
+  const tot=DAYS.map((d,i)=>sum(site.shifts.map(l=>l.hours[i])));
+  return `<div class="tablewrap"><table><thead><tr><th>Shift</th><th>Time</th>${DAYS.map(d=>`<th class="n">${d}</th>`).join('')}<th class="n">Hr/wk</th><th class="n">Hr/mo</th>${edit?'<th></th>':''}</tr></thead><tbody>
+  ${site.shifts.map((l,li)=>`<tr><td>${edit?`<input class="sh_name" data-l="${li}" value="${esc(l.name)}" style="width:150px">`:esc(l.name)}</td><td>${edit?`<input class="sh_time" data-l="${li}" value="${esc(l.time)}" style="width:170px">`:esc(l.time)}</td>${l.hours.map((h,di)=>`<td class="n">${edit?`<input class="cell sh_h" type="number" step="0.5" min="0" data-l="${li}" data-d="${di}" value="${h}">`:fmt(h)}</td>`).join('')}<td class="n"><b>${fmt(sum(l.hours))}</b></td><td class="n">${fmt(sum(l.hours)*52/12)}</td>${edit?`<td><button class="btn danger small sh_del" data-l="${li}">Remove</button></td>`:''}</tr>`).join('')}
+  <tr class="tot"><td>Total</td><td></td>${tot.map(v=>`<td class="n">${fmt(v)}</td>`).join('')}<td class="n">${fmt(sum(tot))}</td><td class="n">${fmt(sum(tot)*52/12)}</td>${edit?'<td></td>':''}</tr></tbody></table></div>`;
+}
+VIEWS.shifts=()=>{
+  const site=D.sites.find(x=>x.name===ui.shiftSite);
+  const base=BASE.sites.find(x=>x.name===ui.shiftSite);
+  const wk=sum(site.shifts.map(l=>sum(l.hours))), bwk=sum(base.shifts.map(l=>sum(l.hours)));
+  const mix=shiftMixBySite(ui.shiftSite);
+  return `<h2>Shifts and coverage hours</h2>
+  <div class="card"><div class="row">${siteSelect('shs',ui.shiftSite)}<button class="btn sec" id="sh_add">Add shift line</button><button class="btn sec" id="sh_reset">Reset this site to baseline</button></div>
+  <div class="note">Each line is one physician shift. Type the hours it runs on each day of the week. Changes update demand on every page right away. Baseline for ${esc(ui.shiftSite)} is ${fmt0(bwk)} hr/wk, current is ${fmt0(wk)} hr/wk (${wk-bwk>=0?'+':''}${fmt(wk-bwk)}).</div></div>
+  <div class="card"><h3>${esc(ui.shiftSite)} shift grid</h3>${shiftTable(site,true)}</div>
+  <div class="card"><h3>Scheduled hours by shift type, ${esc(ui.shiftSite)}, Jul-Sep average per month</h3>${mix}</div>
+  <div class="card"><h3>All sites</h3><table><tr><th>Site</th><th class="n">Shift lines</th><th class="n">Hr/wk</th><th class="n">Hr/mo</th><th class="n">Baseline hr/wk</th></tr>${D.sites.map(s=>{const b=BASE.sites.find(x=>x.name===s.name);return `<tr><td>${s.name}</td><td class="n">${s.shifts.length}</td><td class="n">${fmt0(siteWeekly(s.name))}</td><td class="n">${fmt0(siteDemandMo(s.name))}</td><td class="n">${fmt0(sum(b.shifts.map(l=>sum(l.hours))))}</td></tr>`;}).join('')}</table></div>`;
+};
+function shiftMixBySite(siteName){
+  const agg={};
+  D.physicians.forEach(p=>{ if(!p.shiftMix) return; Object.entries(p.shiftMix).forEach(([k,v])=>{const [s,sh]=k.split('|'); if(s!==siteName) return; agg[sh]=agg[sh]||{c:0,h:0,n:new Set()}; agg[sh].c+=v.c; agg[sh].h+=v.h; agg[sh].n.add(p.name);});});
+  const rows=Object.entries(agg).sort((a,b)=>b[1].h-a[1].h);
+  if(!rows.length) return `<div class="muted">Shift-type detail by physician has not been loaded yet.</div>`;
+  return `<table><tr><th>Shift type</th><th class="n">Shifts per month</th><th class="n">Hours per month</th><th class="n">Physicians</th></tr>${rows.map(([k,v])=>`<tr><td>${esc(k)}</td><td class="n">${fmt(v.c/3)}</td><td class="n">${fmt(v.h/3)}</td><td class="n">${v.n.size}</td></tr>`).join('')}</table>`;
+}
+BIND.shifts=()=>{
+  const site=D.sites.find(x=>x.name===ui.shiftSite);
+  $('#shs').onchange=e=>{ui.shiftSite=e.target.value;render();};
+  document.querySelectorAll('.sh_h').forEach(i=>i.onchange=async()=>{site.shifts[+i.dataset.l].hours[+i.dataset.d]=Math.max(0,+i.value||0);await commit();});
+  document.querySelectorAll('.sh_name').forEach(i=>i.onchange=async()=>{site.shifts[+i.dataset.l].name=i.value;await commit();});
+  document.querySelectorAll('.sh_time').forEach(i=>i.onchange=async()=>{site.shifts[+i.dataset.l].time=i.value;await commit();});
+  document.querySelectorAll('.sh_del').forEach(b=>b.onclick=async()=>{site.shifts.splice(+b.dataset.l,1);await commit();});
+  $('#sh_add').onclick=async()=>{site.shifts.push({name:'New shift',time:'',hours:[0,0,0,0,0,0,0]});await commit();};
+  $('#sh_reset').onclick=async()=>{const b=BASE.sites.find(x=>x.name===ui.shiftSite);site.shifts=JSON.parse(JSON.stringify(b.shifts));await commit();};
+};
+
+// planning
+VIEWS.plan=()=>{
+  const sites=ui.planSites==='South'?SOUTH:ui.planSites==='North'?NORTH:ui.planSites==='System'?ALL:[ui.planSites];
+  const basis=ui.basis==='actual'?'contract_prn':ui.basis;
+  const rows=FY.map(m=>{const dem=sum(sites.map(siteDemandMo)); const sup=sum(D.physicians.filter(p=>activeIn(p,m)).map(p=>sum(sites.map(s=>supply(p,s,basis))))); return {m,dem,sup,gap:sup-dem};});
+  const maxv=Math.max(...rows.map(r=>Math.max(r.dem,r.sup)));
+  const W=900,H=240,L=50,B=30,bw=(W-L-10)/12, y=v=>H-B-(H-B-10)*v/(maxv||1);
+  const chart=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Monthly supply vs demand">
+   ${[0,.25,.5,.75,1].map(f=>`<line x1="${L}" x2="${W}" y1="${y(maxv*f)}" y2="${y(maxv*f)}" stroke="#e3e8e5"/><text x="${L-6}" y="${y(maxv*f)+4}" font-size="11" text-anchor="end" fill="#5d6b64">${fmt0(maxv*f)}</text>`).join('')}
+   ${rows.map((r,i)=>{const x=L+i*bw+bw*0.15,w=bw*0.7;return `<rect x="${x}" y="${y(r.sup)}" width="${w}" height="${H-B-y(r.sup)}" fill="#006747" rx="2"/><text x="${x+w/2}" y="${H-10}" font-size="11" text-anchor="middle" fill="#5d6b64">${r.m.slice(5)}/${r.m.slice(2,4)}</text>`;}).join('')}
+   <polyline fill="none" stroke="#b8a957" stroke-width="3" points="${rows.map((r,i)=>`${L+i*bw+bw/2},${y(r.dem)}`).join(' ')}"/>
+  </svg>`;
+  const changes=D.physicians.filter(p=>p.start||p.end);
+  return `<h2>FY27 staffing projection</h2>
+  <div class="card"><div class="row">${basisSelect('pbasis')}
+   <label>Sites<select id="psites">${['South','North','System',...ALL].map(s=>`<option ${ui.planSites===s?'selected':''}>${s}</option>`).join('')}</select></label>
+   <button class="btn" id="padd">Add a planned hire</button></div>
+   <div class="note">Supply counts each physician only in months between their start and end dates. The actual-schedule basis is not month-specific, so the projection uses contracted plus PRN in its place. Demand follows the current shift grids.</div></div>
+  <div class="card"><h3>Monthly supply vs demand, ${esc(ui.planSites)} (${esc(BASES[basis])})</h3>
+   <div class="legend"><span><i style="background:#006747"></i>Supply hr/mo</span><span><i style="background:#b8a957"></i>Demand hr/mo</span></div>${chart}
+   <div class="tablewrap"><table><tr><th>Month</th>${rows.map(r=>`<th class="n">${r.m.slice(5)}/${r.m.slice(2,4)}</th>`).join('')}</tr>
+   <tr><td>Demand</td>${rows.map(r=>`<td class="n">${fmt0(r.dem)}</td>`).join('')}</tr>
+   <tr><td>Supply</td>${rows.map(r=>`<td class="n">${fmt0(r.sup)}</td>`).join('')}</tr>
+   <tr><td>Supply minus demand</td>${rows.map(r=>`<td class="n ${cls(r.gap)}">${fmt0(r.gap)}</td>`).join('')}</tr>
+   <tr><td>FTE equivalent</td>${rows.map(r=>`<td class="n ${cls(r.gap)}">${fmt(r.gap/FTEMO())}</td>`).join('')}</tr></table></div></div>
+  <div class="card"><h3>Hires needed to close the gap</h3>${hireCalc(rows)}</div>
+  <div class="card"><h3>Dated roster changes in the projection</h3>${changes.length?`<table><tr><th>Name</th><th>Start</th><th>End</th><th class="n">Contract hr/mo</th></tr>${changes.map(p=>`<tr class="clk" data-id="${p.id}"><td>${esc(p.name)}</td><td>${esc(p.start)}</td><td>${esc(p.end)}</td><td class="n">${fmt(contractMo(p))}</td></tr>`).join('')}</table>`:'<div class="muted">None yet. Open any physician to add a start or end date, or add a planned hire.</div>'}</div>`;
+};
+function hireCalc(rows){
+  const worst=rows.reduce((a,b)=>b.gap<a.gap?b:a,rows[0]);
+  if(worst.gap>=0) return `<div class="pos">Supply covers demand in every month on this basis.</div>`;
+  const need=-worst.gap;
+  return `<div>Largest shortfall is <b>${fmt0(need)} hr/mo</b> in ${worst.m}. That equals <b>${fmt(need/FTEMO())} FTE</b> at ${fmt0(D.meta.fteHours)} hr/yr, or <b>${fmt(need/80)}</b> physicians at 80 hr/mo, or <b>${fmt(need/40)}</b> at 40 hr/mo.</div>`;
+}
+BIND.plan=()=>{ $('#pbasis').onchange=e=>{ui.basis=e.target.value;render();}; $('#psites').onchange=e=>{ui.planSites=e.target.value;render();}; $('#padd').onclick=()=>openPerson(null); bindPersonClicks(); };
+
+// data
+VIEWS.data=()=>`<h2>Data</h2>
+ <div class="card"><h3>Save and share edits</h3>
+  <div class="note">Edits you make are saved in this browser only. To make them the version everyone sees, download the updated data file and replace <code>data.enc</code> in the GitHub repository. The file is encrypted with the site password.</div>
+  <div class="row"><button class="btn" id="dl_enc">Download updated data file (data.enc)</button><button class="btn sec" id="dl_csv">Download physician table (CSV)</button><button class="btn sec" id="dl_json">Download readable data (JSON)</button></div></div>
+ <div class="card"><h3>Load or reset</h3><div class="row">
+  <label>Load a data file (.enc or .json)<input type="file" id="ul" accept=".enc,.json"></label>
+  <button class="btn danger" id="reset">Discard my edits and reload the published data</button></div></div>
+ <div class="card"><h3>Settings</h3><div class="row"><label>Clinical hours per FTE<input type="number" id="ftehrs" value="${D.meta.fteHours}"></label></div></div>
+ <div class="card"><h3>Sources</h3><ul>${D.meta.sources.map(s=>`<li>${esc(s)}</li>`).join('')}</ul>
+  <div class="note">Data as of ${esc(D.meta.asOf)}. Removed as departed: ${esc(D.meta.departed)}.</div></div>`;
+BIND.data=()=>{
+  $('#dl_enc').onclick=async()=>{const blob=await encryptObj(D,KEY.key,KEY.salt);download('data.enc',JSON.stringify(blob),'application/json');};
+  $('#dl_json').onclick=()=>download('ed-staffing-data.json',JSON.stringify(D,null,1),'application/json');
+  $('#dl_csv').onclick=()=>{const h=['Name','Category','Role','Annual contract','Target hr/mo','North contract annual','Worked hr/mo last 3 mo',...ALL,'Worked hr/mo last 6 mo','Start','End','Notes'];const rows=D.physicians.map(p=>[p.name,p.category,p.role,p.annualContract,r1(targetMo(p)),p.northAnnual,r1(actualAll(p)),...ALL.map(s=>r1(actualAvg(p,s))),r1(sixAvg(p)),p.start,p.end,p.notes]);download('physician-hours.csv',[h,...rows].map(r=>r.map(c=>'"'+String(c??'').replace(/"/g,'""')+'"').join(',')).join('\n'),'text/csv');};
+  $('#reset').onclick=async()=>{if(!confirm('Discard all edits in this browser?'))return;try{localStorage.removeItem(LS);}catch(e){} D=JSON.parse(JSON.stringify(BASE)); render();};
+  $('#ftehrs').onchange=async e=>{D.meta.fteHours=+e.target.value||1440;await commit();};
+  $('#ul').onchange=async e=>{const f=e.target.files[0];if(!f)return;const t=await f.text();try{let o=JSON.parse(t);if(o.data&&o.iv){const pw=sessionPw;o=(await decryptBlob(o,pw)).obj;}if(!o.physicians||!o.sites)throw 0;D=o;await commit();alert('Loaded.');}catch(err){alert('Could not read that file.');}};
+};
+function download(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
+
+// ---------- boot ----------
+let sessionPw='';
+async function unlock(){
+  const pw=$('#pw').value; $('#pwmsg').textContent='';
+  try{
+    const blob=await fetch('data.enc',{cache:'no-store'}).then(r=>r.json());
+    const r=await decryptBlob(blob,pw);
+    BASE=r.obj; KEY={key:r.key,salt:r.salt}; sessionPw=pw;
+    D=(await loadLocal(pw))||JSON.parse(JSON.stringify(BASE));
+    $('#gate').classList.add('hide'); $('#hdr').classList.remove('hide'); $('#app').classList.remove('hide');
+    $('#asof').textContent='Schedule data through October 2026, pulled '+BASE.meta.asOf;
+    render();
+  }catch(e){ $('#pwmsg').textContent='That password did not open the data.'; }
+}
+$('#go').onclick=unlock; $('#pw').onkeydown=e=>{if(e.key==='Enter')unlock();};
+</script>
+</body>
+</html>
