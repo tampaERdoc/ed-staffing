@@ -322,7 +322,9 @@ function confirmRemove(p){ return window.confirm('Remove '+p.name+' from the ros
 function shiftMixHtml(p){
   if(!p.shiftMix||!Object.keys(p.shiftMix).length) return `<h3>Shift types worked</h3><div class="muted">Shift-type detail by physician has not been loaded yet.</div>`;
   const rows=Object.entries(p.shiftMix).sort((a,b)=>b[1].h-a[1].h);
-  return `<h3>Shift types worked, Jul-Sep</h3><table><tr><th>Site</th><th>Shift</th><th class="n">Shifts</th><th class="n">Hours</th></tr>${rows.map(([k,v])=>{const [s,sh]=k.split('|');return `<tr><td>${esc(s)}</td><td>${esc(sh)}</td><td class="n">${v.c}</td><td class="n">${fmt(v.h)}</td></tr>`;}).join('')}</table>`;
+  const tot=sum(rows.map(r=>r[1].h));
+  const night=sum(rows.filter(([k])=>/7P-7A|-N\b|-E\b|PM|1P-1A|1P-12A/.test(k.split('|')[1])).map(r=>r[1].h));
+  return `<h3>Shift types worked, Jul-Sep 2026</h3><div class="note">Evening and night shifts (PM, Night, 7P-7A, Mid closing after midnight) are about ${fmt(night/tot*100)}% of this physician's hours.</div><table><tr><th>Site</th><th>Shift</th><th class="n">Shifts (3 mo)</th><th class="n">Hours (3 mo)</th><th class="n">Hours per month</th></tr>${rows.map(([k,v])=>{const [s,sh]=k.split('|');return `<tr><td>${esc(s)}</td><td>${esc(sh)}</td><td class="n">${v.c}</td><td class="n">${fmt(v.h)}</td><td class="n">${fmt(v.h/3)}</td></tr>`;}).join('')}<tr class="tot"><td>Total</td><td></td><td class="n">${sum(rows.map(r=>r[1].c))}</td><td class="n">${fmt(tot)}</td><td class="n">${fmt(tot/3)}</td></tr></table>`;
 }
 
 // site report
@@ -346,6 +348,7 @@ VIEWS.site=()=>{
   ${ps.map(x=>`<tr class="clk" data-id="${x.p.id}"><td>${esc(x.p.name)}</td><td>${catTag(x.p)}</td><td class="n">${hasContract(x.p)?fmt(allocShare(x.p,s)*100)+'%':''}</td><td class="n">${fmt(x.con)}</td><td class="n">${fmt(x.tgt)}</td><td class="n">${fmt(x.act)}</td><td class="n ${cls(x.act-x.con)}">${fmt(x.act-x.con)}</td></tr>`).join('')}
   <tr class="tot"><td>Total</td><td></td><td></td><td class="n">${fmt(con)}</td><td class="n">${fmt(tgt)}</td><td class="n">${fmt(act)}</td><td class="n">${fmt(act-con)}</td></tr></tbody></table></div>
   <div class="note">Worked hours sum to ${fmt(act)} vs facility staffed ${fmt(stf)}. Any difference is shifts worked by people not on this roster (departed staff who still held summer shifts).</div></div>
+  <div class="card"><h3>Scheduled hours by shift type at ${esc(s)}, Jul-Sep average per month</h3>${shiftMixBySite(s)}</div>
   <div class="card"><h3>Shift lines at ${esc(s)}</h3>${shiftTable(site,false)}<div class="note">Edit these on the Shifts page.</div></div>`;
 };
 BIND.site=()=>{ $('#sitesel').onchange=e=>{ui.site=e.target.value;render();}; bindPersonClicks();
@@ -366,17 +369,21 @@ VIEWS.shifts=()=>{
   const mix=shiftMixBySite(ui.shiftSite);
   return `<h2>Shifts and coverage hours</h2>
   <div class="card"><div class="row">${siteSelect('shs',ui.shiftSite)}<button class="btn sec" id="sh_add">Add shift line</button><button class="btn sec" id="sh_reset">Reset this site to baseline</button></div>
-  <div class="note">Each line is one physician shift. Type the hours it runs on each day of the week. Changes update demand on every page right away. Baseline for ${esc(ui.shiftSite)} is ${fmt0(bwk)} hr/wk, current is ${fmt0(wk)} hr/wk (${wk-bwk>=0?'+':''}${fmt(wk-bwk)}).</div></div>
+  <div class="note">Each line is one physician shift. Type the hours it runs on each day of the week. Changes update demand on every page right away. Baseline for ${esc(ui.shiftSite)} is ${fmt0(bwk)} hr/wk, current is ${fmt0(wk)} hr/wk (${wk-bwk===0?'no change':(wk-bwk>0?'+':'')+r1(wk-bwk)+' hr/wk'}).</div></div>
   <div class="card"><h3>${esc(ui.shiftSite)} shift grid</h3>${shiftTable(site,true)}</div>
   <div class="card"><h3>Scheduled hours by shift type, ${esc(ui.shiftSite)}, Jul-Sep average per month</h3>${mix}</div>
   <div class="card"><h3>All sites</h3><table><tr><th>Site</th><th class="n">Shift lines</th><th class="n">Hr/wk</th><th class="n">Hr/mo</th><th class="n">Baseline hr/wk</th></tr>${D.sites.map(s=>{const b=BASE.sites.find(x=>x.name===s.name);return `<tr><td>${s.name}</td><td class="n">${s.shifts.length}</td><td class="n">${fmt0(siteWeekly(s.name))}</td><td class="n">${fmt0(siteDemandMo(s.name))}</td><td class="n">${fmt0(sum(b.shifts.map(l=>sum(l.hours))))}</td></tr>`;}).join('')}</table></div>`;
 };
 function shiftMixBySite(siteName){
-  const agg={};
-  D.physicians.forEach(p=>{ if(!p.shiftMix) return; Object.entries(p.shiftMix).forEach(([k,v])=>{const [s,sh]=k.split('|'); if(s!==siteName) return; agg[sh]=agg[sh]||{c:0,h:0,n:new Set()}; agg[sh].c+=v.c; agg[sh].h+=v.h; agg[sh].n.add(p.name);});});
-  const rows=Object.entries(agg).sort((a,b)=>b[1].h-a[1].h);
-  if(!rows.length) return `<div class="muted">Shift-type detail by physician has not been loaded yet.</div>`;
-  return `<table><tr><th>Shift type</th><th class="n">Shifts per month</th><th class="n">Hours per month</th><th class="n">Physicians</th></tr>${rows.map(([k,v])=>`<tr><td>${esc(k)}</td><td class="n">${fmt(v.c/3)}</td><td class="n">${fmt(v.h/3)}</td><td class="n">${v.n.size}</td></tr>`).join('')}</table>`;
+  const site=D.sites.find(x=>x.name===siteName);
+  const sa=(site&&site.shiftActual)||{};
+  const rows=Object.entries(sa).sort((a,b)=>b[1].h-a[1].h);
+  if(!rows.length) return `<div class="muted">No shift-type detail loaded for this site.</div>`;
+  const who={};
+  D.physicians.forEach(p=>Object.entries(p.shiftMix||{}).forEach(([k,v])=>{const [s,sh]=k.split('|'); if(s!==siteName) return; (who[sh]=who[sh]||[]).push({id:p.id,name:p.name,h:v.h,c:v.c});}));
+  const tot=sum(rows.map(r=>r[1].h));
+  return `<table><tr><th>Shift type in ShiftAdmin</th><th class="n">Shifts per month</th><th class="n">Hours per month</th><th class="n">Share of hours</th><th class="n">Physicians</th><th>Top physicians on this shift (hours per month)</th></tr>${rows.map(([k,v])=>{const top=(who[k]||[]).sort((a,b)=>b.h-a.h).slice(0,4).map(x=>`${esc(x.name.split(',')[0])} ${fmt(x.h/3)}`).join(', ');return `<tr><td>${esc(k)}</td><td class="n">${fmt(v.c/3)}</td><td class="n">${fmt(v.h/3)}</td><td class="n">${fmt(v.h/tot*100)}%</td><td class="n">${v.n}</td><td>${top}</td></tr>`;}).join('')}<tr class="tot"><td>Total</td><td class="n">${fmt(sum(rows.map(r=>r[1].c))/3)}</td><td class="n">${fmt(tot/3)}</td><td class="n">100%</td><td></td><td></td></tr></table>
+  <div class="note">Includes everyone who worked these shifts, including staff who have since left. Each physician's own breakdown is in their record.</div>`;
 }
 BIND.shifts=()=>{
   const site=D.sites.find(x=>x.name===ui.shiftSite);
