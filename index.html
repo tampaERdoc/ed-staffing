@@ -190,14 +190,14 @@ async function commit(){ await saveLocal(); render(); }
 // ---------- site summary ----------
 function siteRows(basis){
   return ALL.map(s=>{
-    const dem=siteDemandMo(s), sup=sum(D.physicians.map(p=>supply(p,s,basis))), stf=staffedAvg(s);
-    return {site:s,group:SOUTH.includes(s)?'South':'North',weekly:siteWeekly(s),dem,sup,stf,gap:sup-dem,fte:(sup-dem)/FTEMO()};
+    const dem=siteDemandMo(s), sup=sum(D.physicians.map(p=>supply(p,s,basis))), stf=staffedAvg(s), con=sum(D.physicians.map(p=>supply(p,s,'contract')));
+    return {site:s,group:SOUTH.includes(s)?'South':'North',weekly:siteWeekly(s),dem,sup,stf,con,gap:sup-dem,fte:(sup-dem)/FTEMO()};
   });
 }
 function siteTable(rows){
-  const tot=g=>{const rs=rows.filter(r=>!g||r.group===g);return {site:g?`${g} total`:'System total',weekly:sum(rs.map(r=>r.weekly)),dem:sum(rs.map(r=>r.dem)),sup:sum(rs.map(r=>r.sup)),stf:sum(rs.map(r=>r.stf))};};
-  const line=(r,t)=>{const gap=r.sup-r.dem;return `<tr class="${t?'tot':'clk'}" ${t?'':`data-site="${esc(r.site)}"`}><td>${esc(r.site)}</td><td class="n">${fmt0(r.weekly)}</td><td class="n">${fmt(r.dem)}</td><td class="n">${fmt(r.stf)}</td><td class="n">${fmt(r.sup)}</td><td class="n ${cls(gap)}">${fmt(gap)}</td><td class="n ${cls(gap)}">${fmt(gap/FTEMO())}</td></tr>`;};
-  return `<div class="tablewrap"><table><thead><tr><th>Site</th><th class="n">Demand hr/wk</th><th class="n">Demand hr/mo</th><th class="n">Staffed hr/mo (Jul-Sep)</th><th class="n">Supply hr/mo</th><th class="n">Supply minus demand</th><th class="n">FTE equivalent</th></tr></thead><tbody>
+  const tot=g=>{const rs=rows.filter(r=>!g||r.group===g);return {site:g?`${g} total`:'System total',weekly:sum(rs.map(r=>r.weekly)),dem:sum(rs.map(r=>r.dem)),sup:sum(rs.map(r=>r.sup)),stf:sum(rs.map(r=>r.stf)),con:sum(rs.map(r=>r.con))};};
+  const line=(r,t)=>{const gap=r.sup-r.dem;return `<tr class="${t?'tot':'clk'}" ${t?'':`data-site="${esc(r.site)}"`}><td>${esc(r.site)}</td><td class="n">${fmt0(r.weekly)}</td><td class="n">${fmt(r.dem)}</td><td class="n">${fmt(r.con)}</td><td class="n">${fmt(r.stf)}</td><td class="n">${fmt(r.sup)}</td><td class="n ${cls(gap)}">${fmt(gap)}</td><td class="n ${cls(gap)}">${fmt(gap/FTEMO())}</td></tr>`;};
+  return `<div class="tablewrap"><table><thead><tr><th>Site</th><th class="n">Demand hr/wk</th><th class="n">Demand hr/mo</th><th class="n">Contracted hr/mo</th><th class="n">Staffed hr/mo (Jul-Sep)</th><th class="n">Supply hr/mo</th><th class="n">Supply minus demand</th><th class="n">FTE equivalent</th></tr></thead><tbody>
   ${rows.filter(r=>r.group==='South').map(r=>line(r)).join('')}${line(tot('South'),1)}
   ${rows.filter(r=>r.group==='North').map(r=>line(r)).join('')}${line(tot('North'),1)}${line(tot(),1)}</tbody></table></div>
   <div class="note">Demand comes from the shift grids on the Shifts page (weekly hours x 52 / 12). FTE equivalent uses ${fmt0(D.meta.fteHours)} clinical hours per FTE. Click a site for its report.</div>`;
@@ -215,7 +215,7 @@ VIEWS.overview=()=>{
   const prnHrs=sum(prn.map(p=>sum(SOUTH.map(s=>actualAvg(p,s)))));
   const ending=D.physicians.filter(p=>p.end).sort((a,b)=>a.end.localeCompare(b.end));
   const starting=D.physicians.filter(p=>p.start&&p.start>=D.meta.asOf).sort((a,b)=>a.start.localeCompare(b.start));
-  const maxv=Math.max(...rows.map(r=>Math.max(r.dem,r.sup,r.stf)));
+  const maxv=Math.max(...rows.map(r=>Math.max(r.dem,r.sup,r.stf,r.con)));
   return `<h2>System overview</h2>
   <div class="row" style="margin-bottom:12px">${basisSelect('basis')}</div>
   <div class="kpis">
@@ -227,9 +227,9 @@ VIEWS.overview=()=>{
     <div class="kpi gold"><div class="v">${prn.length}</div><div class="l">PRN physicians (${fmt0(prnHrs)} hr/mo in the south)</div></div>
   </div>
   <div class="card"><h3>Supply vs demand by site (${esc(BASES[ui.basis])})</h3>${siteTable(rows)}</div>
-  <div class="card"><h3>Demand, staffed and supply by site, hr/mo</h3>
-    <div class="legend"><span><i style="background:var(--gold)"></i>Demand</span><span><i style="background:#8fb8a6"></i>Staffed (Jul-Sep)</span><span><i style="background:var(--green)"></i>Supply on selected basis</span></div>
-    ${barChart(rows.map(r=>({label:r.site,vals:[r.dem,r.stf,r.sup]})),maxv)}
+  <div class="card"><h3>Demand, contracted, staffed and supply by site, hr/mo</h3>
+    <div class="legend"><span><i style="background:var(--gold)"></i>Demand</span><span><i style="background:#1f4e9e"></i>Contracted</span><span><i style="background:#8fb8a6"></i>Staffed (Jul-Sep)</span><span><i style="background:var(--green)"></i>Supply on selected basis</span></div>
+    ${barChart(rows.map(r=>({label:r.site,vals:[r.dem,r.con,r.stf,r.sup]})),maxv)}
   </div>
   <div class="grid2">
     <div class="card"><h3>Scheduled departures and end dates</h3>${ending.length?`<table><tr><th>Name</th><th>End</th><th class="n">Contract hr/mo</th></tr>${ending.map(p=>`<tr class="clk" data-id="${p.id}"><td>${esc(p.name)}</td><td>${esc(p.end)}</td><td class="n">${fmt(contractMo(p))}</td></tr>`).join('')}</table>`:'<div class="muted">No end dates entered. Add one on a physician record to see it in the projection.</div>'}
@@ -238,8 +238,8 @@ VIEWS.overview=()=>{
   </div>`;
 };
 function barChart(items,maxv){
-  const W=900,rowH=46,lab=150,H=items.length*rowH+20, sc=v=>(W-lab-70)*v/(maxv||1);
-  const cols=['#cfc493','#8fb8a6','#006747'];
+  const W=900,rowH=58,lab=150,H=items.length*rowH+20, sc=v=>(W-lab-70)*v/(maxv||1);
+  const cols=['#cfc493','#1f4e9e','#8fb8a6','#006747'];
   return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Demand, staffed and supply by site">${items.map((it,i)=>{const y=10+i*rowH;return `<text x="0" y="${y+22}" font-size="14" fill="#1d2a24">${esc(it.label)}</text>${it.vals.map((v,j)=>`<rect x="${lab}" y="${y+j*12}" width="${Math.max(0,sc(v))}" height="10" fill="${cols[j]}" rx="2"></rect><text x="${lab+sc(v)+5}" y="${y+j*12+9}" font-size="11" fill="#5d6b64">${fmt0(v)}</text>`).join('')}`;}).join('')}</svg>`;
 }
 BIND.overview=()=>{ $('#basis').onchange=e=>{ui.basis=e.target.value;render();}; bindSiteClicks(); bindPersonClicks(); };
