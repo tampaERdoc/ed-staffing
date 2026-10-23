@@ -457,6 +457,7 @@ function download(name,text,type){const a=document.createElement('a');a.href=URL
 let sessionPw='';
 async function unlock(){
   const pw=$('#pw').value; $('#pwmsg').textContent='';
+  if(!window.crypto||!crypto.subtle){ if(location.protocol==='http:'&&location.hostname!=='localhost'){ location.replace('https://'+location.host+location.pathname); return; } $('#pwmsg').textContent='This page needs a secure (https) connection to open the data.'; return; }
   try{
     const blob=await fetch('data.enc',{cache:'no-store'}).then(r=>r.json());
     const r=await decryptBlob(blob,pw);
